@@ -1,0 +1,46 @@
+#!/bin/sh
+# storyblok-mcp: run the hosted Storyblok MCP server with the token of the
+# project you are in. Finds the nearest .env.hermes (cwd, then parents up to
+# $HOME or /), reads STORYBLOK_PERSONAL_ACCESS_TOKEN from it without executing
+# the file, and bridges stdio <-> HTTP via mcp-remote. Fails closed: no file or
+# no token means no connection, never a fallback to another account.
+set -eu
+
+ENV_NAME="${STORYBLOK_MCP_ENV_FILE:-.env.hermes}"
+TOKEN_KEY="${STORYBLOK_MCP_TOKEN_KEY:-STORYBLOK_PERSONAL_ACCESS_TOKEN}"
+MCP_URL="${STORYBLOK_MCP_URL:-https://mcp.labs.storyblok.com/mcp}"
+MCP_REMOTE="${STORYBLOK_MCP_REMOTE:-mcp-remote@0.1.38}"
+
+die() { echo "storyblok-mcp: $*" >&2; exit 1; }
+
+find_env_file() {
+  dir=$(pwd -P)
+  while :; do
+    if [ -f "$dir/$ENV_NAME" ]; then echo "$dir/$ENV_NAME"; return 0; fi
+    [ "$dir" = "/" ] && return 1
+    [ -n "${HOME:-}" ] && [ "$dir" = "$HOME" ] && return 1
+    dir=$(dirname "$dir")
+  done
+}
+
+case "$ENV_NAME" in
+  /*) env_file="$ENV_NAME"; [ -f "$env_file" ] || die "env file not found: $env_file" ;;
+  *)  env_file=$(find_env_file) || die "no $ENV_NAME found in $(pwd -P) or its parents" ;;
+esac
+[ -r "$env_file" ] || die "env file not readable: $env_file"
+
+# Last assignment wins; supports optional 'export ', surrounding quotes, CRLF.
+token=$(sed -n "s/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}$TOKEN_KEY[[:space:]]*=[[:space:]]*//p" "$env_file" \
+  | tail -n 1 | tr -d '\r' \
+  | sed -e 's/^"\(.*\)"[[:space:]]*$/\1/' -e "s/^'\(.*\)'[[:space:]]*$/\1/" -e 's/[[:space:]]*$//')
+[ -n "$token" ] || die "$TOKEN_KEY is empty or missing in $env_file"
+
+echo "storyblok-mcp: using $env_file" >&2
+
+# mcp-remote expands \${VAR} in --header itself, so the token never shows up in argv / ps.
+STORYBLOK_MCP_AUTH_HEADER="Bearer $token"
+export STORYBLOK_MCP_AUTH_HEADER
+unset token
+
+command -v npx >/dev/null 2>&1 || die "npx not found on PATH"
+exec npx -y "$MCP_REMOTE" "$MCP_URL" --header 'Authorization:${STORYBLOK_MCP_AUTH_HEADER}' --transport http-only
