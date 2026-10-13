@@ -73,7 +73,7 @@ mcp_servers:
       enabled: false
 ```
 
-Do **not** set `cwd`. The server must inherit the session directory.
+Do **not** set `cwd`. The server must inherit the session directory. Hermes starts stdio servers in its configured working directory: `terminal.cwd` / `TERMINAL_CWD`, otherwise the directory you launched from. With the default `terminal.cwd: .` that is the project you start `hermes` in. A `TERMINAL_CWD` exported from a parent Hermes session overrides it.
 
 ### Claude Code / Cursor / other stdio clients
 
@@ -110,6 +110,14 @@ Supported env file syntax: `KEY=value`, `export KEY=value`, single or double quo
 ## Background
 
 This wrapper replaces a proposed core change to Hermes Agent ([NousResearch/hermes-agent#74809](https://github.com/NousResearch/hermes-agent/pull/74809)). That change added per-server `env_file` support. Handling credentials inside the agent turned out to need redaction across logs, probes, reconnects and error paths. Keeping the token outside the agent process avoids all of that.
+
+## Tests
+
+```bash
+sh tests/parse.sh
+```
+
+This checks the env-file parser: `export`, quotes, CRLF, last-wins, and ignores comments and look-alike keys.
 
 ## License
 
