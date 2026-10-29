@@ -15,10 +15,12 @@ die() { echo "storyblok-mcp: $*" >&2; exit 1; }
 
 find_env_file() {
   dir=$(pwd -P)
+  # $HOME may be a symlink; compare physical paths or the walk escapes above it.
+  home=$(cd "${HOME:-/}" 2>/dev/null && pwd -P) || home=/
   while :; do
     if [ -f "$dir/$ENV_NAME" ]; then echo "$dir/$ENV_NAME"; return 0; fi
     [ "$dir" = "/" ] && return 1
-    [ -n "${HOME:-}" ] && [ "$dir" = "$HOME" ] && return 1
+    [ "$dir" = "$home" ] && return 1
     dir=$(dirname "$dir")
   done
 }
@@ -40,7 +42,6 @@ echo "storyblok-mcp: using $env_file" >&2
 # mcp-remote expands \${VAR} in --header itself, so the token never shows up in argv / ps.
 STORYBLOK_MCP_AUTH_HEADER="Bearer $token"
 export STORYBLOK_MCP_AUTH_HEADER
-unset token
 
 command -v npx >/dev/null 2>&1 || die "npx not found on PATH"
 exec npx -y "$MCP_REMOTE" "$MCP_URL" --header 'Authorization:${STORYBLOK_MCP_AUTH_HEADER}' --transport http-only
