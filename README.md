@@ -47,8 +47,8 @@ The chosen file is logged to stderr, for example `storyblok-mcp: using /home/me/
 Requirements: `sh`, `sed`, and Node.js with `npx` on `PATH`.
 
 ```bash
-git clone https://github.com/seppegadeyne/storyblok-mcp-cwd.git ~/Projects/storyblok-mcp-cwd
-ln -s ~/Projects/storyblok-mcp-cwd/bin/storyblok-mcp ~/.local/bin/storyblok-mcp
+git clone https://github.com/seppegadeyne/storyblok-mcp-cwd.git ~/Projects/hermes/mcp-servers/storyblok-mcp-cwd
+ln -s ~/Projects/hermes/mcp-servers/storyblok-mcp-cwd/bin/storyblok-mcp ~/.local/bin/storyblok-mcp
 ```
 
 Per project, add an ignored env file:
