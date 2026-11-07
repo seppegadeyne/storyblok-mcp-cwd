@@ -122,3 +122,5 @@ This checks the env-file parser: `export`, quotes, CRLF, last-wins, and ignores 
 ## License
 
 MIT
+
+- Read CONSTRAINTS.md before writing code. Never weaken it to make a change pass; tightening is fine.
